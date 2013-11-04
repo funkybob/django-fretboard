@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import calendar
 from datetime import datetime, timedelta
 
 from django import template
-from django.conf import settings
 
 from fretboard.helpers import clean_text, format_post as format_post_text
 from fretboard.models import Forum, Topic

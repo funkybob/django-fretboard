@@ -59,7 +59,7 @@ class TopicManager(models.Manager):
 
     def with_totals(self):
         return self.get_queryset().annotate(
-            post_count=Count('posts'),
+            post_count=models.Count('posts'),
         )
 
 class Topic(models.Model):

@@ -1,6 +1,5 @@
 import datetime
 import re
-import time
 import urlparse
 
 import bleach

@@ -1,7 +1,6 @@
-import time
+
 from datetime import datetime, timedelta
 
-from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView
 
