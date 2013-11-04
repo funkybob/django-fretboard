@@ -1,16 +1,14 @@
 import time
-import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView
 
 from fretboard.filters import PostFilter, TopicFilter
-from fretboard.models import Forum, Topic, Post
 from fretboard.forms import PostForm
-
-now        = datetime.datetime.now()
-PAGINATE_BY = getattr(settings, "PAGINATE_BY", 25)
+from fretboard.models import Forum, Topic, Post
+from fretboard.settings import PAGINATE_BY
 
 
 class BaseTopicList(ListView):
@@ -52,12 +50,11 @@ class NewTopics(BaseTopicList):
     """
 
     def get_queryset(self):
-        one_day_ago     = now - datetime.timedelta(days=1)
-        one_day_ago_int = time.mktime(one_day_ago.timetuple())
+        one_day_ago     = datetime.now() - timedelta(days=1)
         last_seen_timestamp = self.request.session.get('last_seen_timestamp', None)
-        if not last_seen_timestamp or last_seen_timestamp > one_day_ago_int:
-            last_seen_timestamp = one_day_ago_int
-        return Topic.objects.filter(modified_int__gt=last_seen_timestamp).select_related(depth=1)
+        if not last_seen_timestamp or last_seen_timestamp > one_day_ago:
+            last_seen_timestamp = one_day_ago
+        return Topic.objects.filter(modified__gt=last_seen_timestamp).select_related(depth=1)
 
     def get_context_data(self, **kwargs):
         context = super(NewTopics, self).get_context_data(**kwargs)
@@ -73,9 +70,10 @@ class LatestTopics(BaseTopicList):
     Subclasses BaseTopicList to provide topics modified within the past day.
     Deprecated by newtopics (above)
     """
-    one_day_ago     = now - datetime.timedelta(days=1)
-    one_day_ago_int = time.mktime(one_day_ago.timetuple())
-    queryset        = Topic.objects.filter(modified_int__gt=one_day_ago_int).select_related(depth=1)
+
+    def get_queryset(self):
+        one_day_ago     = datetime.now() - timedelta(days=1)
+        return Topic.objects.filter(modified__gt=one_day_ago).select_related(depth=1)
 
     def get_context_data(self, **kwargs):
         context = super(LatestTopics, self).get_context_data(**kwargs)
@@ -93,7 +91,7 @@ class TopicList(BaseTopicList):
     """
     def get_queryset(self):
         self.forum = get_object_or_404(Forum, slug=self.forum_slug)
-        return Topic.objects.filter(forum__id=self.forum.id).order_by('-is_sticky', '-modified_int')
+        return self.forum.topic_set.order_by('-is_sticky', '-modified')
 
     def get_context_data(self, **kwargs):
         context = super(TopicList, self).get_context_data(**kwargs)

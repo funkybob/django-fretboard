@@ -1,8 +1,5 @@
 # Create, Remove, Update, Delete views
 
-import datetime
-import time
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -14,9 +11,7 @@ from django.utils.html import strip_tags
 from fretboard.forms import AddTopicForm, PostForm
 from fretboard.helpers import update_post_relations
 from fretboard.models import Forum, Topic, Post
-
-now = datetime.datetime.now()
-PAGINATE_BY = getattr(settings, "PAGINATE_BY", 25)
+from fretboard.settings import PAGINATE_BY
 
 
 @login_required
@@ -24,7 +19,6 @@ def add_topic(request, forum_slug):
     """ Adds a topic to a given forum """
     forum = get_object_or_404(Forum, slug=forum_slug)
     form  = AddTopicForm(request.POST or None, request.FILES or None)
-    current_time   = time.time()
     user           = request.user
 
     if form.is_valid():
@@ -35,8 +29,6 @@ def add_topic(request, forum_slug):
         instance.user            = user
         instance.author          = user.preferred_name
         instance.lastpost_author = user.preferred_name
-        instance.created_int     = current_time
-        instance.modified_int    = current_time
         instance.save()
 
         # and now add the child post
@@ -46,7 +38,6 @@ def add_topic(request, forum_slug):
             author           = user,
             author_name      = user.preferred_name,
             avatar           = user.avatar,
-            post_date_int    = current_time
         )
         if request.FILES:
             post.image = request.FILES['image']
@@ -65,7 +56,6 @@ def add_post(request, t_slug, t_id, p_id = False):  # topic slug, topic id, post
     topic     = get_object_or_404(Topic, id=t_id)
     topic_url = '{0}page{1}/'.format(topic.get_short_url(), topic.page_count)
     user      = request.user
-    current_time = time.time()
     form_title = 'Add a post'
 
     if topic.is_locked:  # If we mistakenly allowed reply on locked topic, bail with error msg.
@@ -95,7 +85,6 @@ def add_post(request, t_slug, t_id, p_id = False):  # topic slug, topic id, post
         instance.author = user
         instance.author_name = user.preferred_name
         instance.avatar = user.avatar
-        instance.post_date_int = current_time
         instance.topic_page = topic_page
         instance.quote = q
         instance.save()

@@ -1,14 +1,14 @@
-from django.conf import settings
+
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import signals
+from django.utils.functional import cached_property
 
+from .settings import PAGINATE_BY
 from .signals import update_forum_votes
 from .helpers import clean_text, format_post
 
 from voting.models import Vote
-
-UserModel = getattr(settings, "AUTH_USER_MODEL", "auth.User")
-PAGINATE_BY = getattr(settings, "PAGINATE_BY", 25)
 
 
 class Category(models.Model):
@@ -55,6 +55,13 @@ class Forum(models.Model):
         return self.topic_set.all().order_by('-id')[:3]
 
 
+class TopicManager(models.Manager):
+
+    def with_totals(self):
+        return self.get_queryset().annotate(
+            post_count=Count('posts'),
+        )
+
 class Topic(models.Model):
     """
     Topics within a forum. User-created.
@@ -63,23 +70,14 @@ class Topic(models.Model):
     name             = models.CharField(max_length=255, verbose_name="Topic Title")
     slug             = models.SlugField(max_length=255)
 
-    created          = models.DateTimeField(auto_now_add=True)
-    created_int      = models.IntegerField(editable=False, help_text="Stores created as ordinal + hour as an integer for faster searching")
-    modified         = models.DateTimeField(auto_now_add=True, help_text="Will be manually changed so every edit doesn't alter the modified time.")
-    modified_int     = models.IntegerField(editable=False, help_text="Stores modified as ordinal + hour as an integer for faster searching")
+    created          = models.DateTimeField(auto_now_add=True, db_index=True)
+    modified         = models.DateTimeField(auto_now_add=True, db_index=True, help_text="Will be manually changed so every edit doesn't alter the modified time.")
 
     is_sticky        = models.BooleanField(blank=True, default=False)
     is_locked        = models.BooleanField(blank=True, default=False)
 
-    user             = models.ForeignKey(UserModel, blank=True, null=True, editable=False)
-    author           = models.CharField(max_length=255, blank=True)
-    post_count       = models.PositiveIntegerField(default=1, editable=False)
-    lastpost         = models.CharField(max_length=255, verbose_name="Last Post", blank=True)
-    latest_post      = models.ForeignKey('fretboard.Post', blank=True, null=True, related_name="latest_post", editable=False)
-    lastpost_author  = models.CharField(max_length=255)
-    page_count       = models.PositiveIntegerField(default=1)
+    user             = models.ForeignKey(get_user_model(), blank=True, null=True, editable=False)
     permalink        = models.CharField(max_length=255, blank=True)
-    votes            = models.IntegerField(default=0, blank=True, null=True)
 
     def __unicode__(self):
         return self.name
@@ -128,33 +126,30 @@ class Topic(models.Model):
     def get_mod_time(self):
         return self.post_set.latest('id').post_date
 
-    def get_latest_post(self):
+    @cached_property
+    def latest_post(self):
         """
         Attempts to get most recent post in a topic.
         Returns none if it fails.
         """
         try:
-            latest = self.post_set.values('id', 'post_date', 'author_name', 'post_date_int').latest('id')
-        except:
-            latest = None
-        return latest
+            return self.post_set.latest('post_date')
+        except Post.DoesNotExist:
+            return None
 
     def get_score(self):
         return Vote.objects.get_score(self)['score']
 
-    def get_post_count(self):
+    @cached_property
+    def post_count(self):
         return self.post_set.count()
-
 
 class Post(models.Model):
     topic          = models.ForeignKey(Topic)
     text           = models.TextField()
     text_formatted = models.TextField(blank=True)
-    author         = models.ForeignKey(UserModel)
-    author_name    = models.CharField(max_length=255, verbose_name="Author Preferred Name", blank=True, null=True)
-    avatar         = models.CharField(max_length=255, verbose_name="Author Avatar", blank=True, null=True)
-    post_date      = models.DateTimeField(auto_now_add=True)
-    post_date_int  = models.IntegerField(editable=False, null=True, help_text="Stores an integer of post_date as ordinal + hour for faster searching")
+    author         = models.ForeignKey(get_user_model())
+    post_date      = models.DateTimeField(auto_now_add=True, db_index=True)
     quote          = models.ForeignKey('self', null=True, blank=True)
     # to do... use contentImage?
     image          = models.ImageField(upload_to='img/fretboard/%Y/', blank=True, null=True)
@@ -178,11 +173,13 @@ class Post(models.Model):
         self.text_formatted = format_post(self.text)
         super(Post, self).save(*args, **kwargs)
 
-    def get_score(self):
+    @cached_property
+    def score(self):
         return Vote.objects.get_score(self)['score']
 
-    def get_avatar(self):
-        return '/media/' + str(self.post_author.avatar)
+    @cached_property
+    def avatar(self):
+        return self.author.avatar.url
 
 
 signals.post_save.connect(update_forum_votes, sender=Vote)
