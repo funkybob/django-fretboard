@@ -59,7 +59,7 @@ mark {background:#ffc}
   {% if filter.data and filter.qs %}
     <div id="topic_list">
       {% for topic in object_list %}
-        {% cache 240 't_list_x' topic.id topic.modified_int 'filters' 8 %}
+        {% cache 240 't_list_x' topic.id topic.modified 'filters' 8 %}
           {% with topic.forum as t_forum %}
             <article>
               <section class="t">

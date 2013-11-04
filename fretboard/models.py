@@ -84,7 +84,7 @@ class Topic(models.Model):
 
     class Meta:
         db_table      = 'forum_topic'
-        ordering      = ['-modified_int']
+        ordering      = ['-modified']
 
     def save(self, *args, **kwargs):
         """

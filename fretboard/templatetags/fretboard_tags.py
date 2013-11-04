@@ -67,7 +67,7 @@ def topic_quick_links(context, topic, latest, last_seen_time):
         pages = hits // PAGINATE_BY + 1
 
     # determine if we need to show new link.
-    if latest and latest.get('post_date_int') and latest['post_date_int'] > last_seen_time:
+    if latest and latest.get('post_date') and latest['post_date'] > last_seen_time:
         output_text += '<a href="{0}#first-new-post" class="new">new</a>'.format(topic.get_last_url())
 
     # If only one post (or none) only return new link, if anything.

@@ -36,9 +36,7 @@
       "name": "Test topic",
       "slug": "test_topic",
       "created": "2012-11-18 00:30:33.789281",
-      "created_int": "1353220297",
       "modified": "2012-11-18 00:30:33.789281",
-      "modified_int": "1353220297",
       "is_sticky": 0,
       "is_locked": 0,
       "author": "Bruce Wayne",
@@ -61,7 +59,6 @@
       "author": 1,
       "author_name": "Bruce Wayne",
       "post_date": "2012-11-18 00:30:33.789281",
-      "post_date_int": "1353220297"
     }
   }
 ]

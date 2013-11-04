@@ -3,7 +3,7 @@
 {% with request.session.last_seen_timestamp as new_time %}
   {% for topic in topics %}
     {# Cache these snippets until mod time changes #}
-    {% cache 360 't_list' topic.id topic.modified_int forum_slug user.is_superuser 1 %}
+    {% cache 360 't_list' topic.id topic.modified forum_slug user.is_superuser 1 %}
       <article class="topic {{ topic.votes|collapse_bad }}">
         {% with topic.forum as t_forum %}
           <section class="t">
