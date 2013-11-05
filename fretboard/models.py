@@ -79,6 +79,8 @@ class Topic(models.Model):
     user             = models.ForeignKey(get_user_model(), blank=True, null=True, editable=False)
     permalink        = models.CharField(max_length=255, blank=True)
 
+    objects = TopicManager()
+
     def __unicode__(self):
         return self.name
 
